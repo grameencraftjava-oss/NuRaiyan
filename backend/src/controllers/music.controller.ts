@@ -204,7 +204,7 @@ const BANGLA_TRANSLITERATION_MAP: Record<string, string> = {
   'বন্ধু': 'Bondhu',
 };
 
-// ── Helper to query Apple iTunes Global Catalog ─────────────────────
+// ── Helper to query Apple iTunes Global Catalog (1000x1000 Retina Cover Art) ──
 async function queryItunes(term: string, limit = 30): Promise<FormattedSong[]> {
   try {
     const encodedTerm = encodeURIComponent(term.trim());
@@ -212,7 +212,7 @@ async function queryItunes(term: string, limit = 30): Promise<FormattedSong[]> {
       `https://itunes.apple.com/search?term=${encodedTerm}&entity=song&limit=${limit}`,
       {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
       }
     );
@@ -230,12 +230,50 @@ async function queryItunes(term: string, limit = 30): Promise<FormattedSong[]> {
         artist: item.artistName,
         album: item.collectionName,
         url: item.previewUrl,
-        artworkUrl: (item.artworkUrl100 || item.artworkUrl60 || '').replace('100x100bb', '600x600bb').replace('60x60bb', '600x600bb'),
+        artworkUrl: (item.artworkUrl100 || item.artworkUrl60 || '')
+          .replace('100x100bb', '1000x1000bb')
+          .replace('60x60bb', '1000x1000bb'),
         duration: item.trackTimeMillis ? Math.round(item.trackTimeMillis / 1000) : 30,
         genre: item.primaryGenreName,
       }));
   } catch (error) {
     console.warn('[iTunes Search Notice]', error);
+    return [];
+  }
+}
+
+// ── Helper to query Deezer Global Catalog (1000x1000 Ultra HD Artwork & 320kbps Audio) ──
+async function queryDeezer(term: string, limit = 30): Promise<FormattedSong[]> {
+  try {
+    const encodedTerm = encodeURIComponent(term.trim());
+    const response = await fetch(
+      `https://api.deezer.com/search?q=${encodedTerm}&limit=${limit}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      }
+    );
+
+    if (!response.ok) return [];
+
+    const json = (await response.json()) as any;
+    if (!json.data || !Array.isArray(json.data)) return [];
+
+    return json.data
+      .filter((item: any) => item.preview && item.title)
+      .map((item: any) => ({
+        id: `dz_${item.id}`,
+        title: item.title,
+        artist: item.artist?.name || 'Unknown Artist',
+        album: item.album?.title || '',
+        url: item.preview,
+        artworkUrl: item.album?.cover_xl || item.album?.cover_big || item.artist?.picture_xl || '',
+        duration: item.duration || 30,
+        genre: 'Music',
+      }));
+  } catch (error) {
+    console.warn('[Deezer Search Notice]', error);
     return [];
   }
 }
@@ -257,7 +295,7 @@ function deduplicateSongs(songs: FormattedSong[]): FormattedSong[] {
   return output;
 }
 
-// ── 1. Global Real-Time Song Search ──────────────────────────────────
+// ── 1. Global Real-Time Song Search (Multi-Engine: Curated + Apple + Deezer) ──
 export async function searchMusic(req: Request, res: Response) {
   try {
     const rawQuery = (req.query.q as string || '').trim();
@@ -289,10 +327,14 @@ export async function searchMusic(req: Request, res: Response) {
             s.artist.toLowerCase().includes(expandedQuery.toLowerCase())))
     );
 
-    // Concurrently search iTunes with original and expanded query
-    const promises: Promise<FormattedSong[]>[] = [queryItunes(rawQuery, 35)];
+    // Concurrently search iTunes + Deezer with original and expanded query
+    const promises: Promise<FormattedSong[]>[] = [
+      queryItunes(rawQuery, 25),
+      queryDeezer(rawQuery, 25),
+    ];
     if (expandedQuery !== rawQuery) {
-      promises.push(queryItunes(expandedQuery, 35));
+      promises.push(queryItunes(expandedQuery, 25));
+      promises.push(queryDeezer(expandedQuery, 25));
     }
 
     const fetchedArrays = await Promise.all(promises);
@@ -315,7 +357,7 @@ export async function getTrendingMusic(req: Request, res: Response) {
     const genre = (req.query.genre as string || 'TRENDING').toUpperCase();
 
     if (genre === 'BANGLA') {
-      // Query top authentic Bangla artists concurrently for rich variety
+      // Query top authentic Bangla artists concurrently across Apple + Deezer
       const banglaQueries = [
         'Tahsan',
         'Habib Wahid',
@@ -323,18 +365,17 @@ export async function getTrendingMusic(req: Request, res: Response) {
         'Coke Studio Bangla',
         'Shironamhin',
         'Anupam Roy',
-        'Bangla Top Hits',
         'James Nagar Baul',
         'Arnob',
         'Minar Rahman',
-        'Imran Mahmudul',
       ];
 
-      const itunesFetches = await Promise.all(
-        banglaQueries.map((term) => queryItunes(term, 10))
-      );
+      const fetches = await Promise.all([
+        ...banglaQueries.map((term) => queryItunes(term, 6)),
+        ...banglaQueries.map((term) => queryDeezer(term, 6)),
+      ]);
 
-      const allBangla = [...CURATED_BANGLA_HITS, ...itunesFetches.flat()];
+      const allBangla = [...CURATED_BANGLA_HITS, ...fetches.flat()];
       const results = deduplicateSongs(allBangla);
 
       return res.json({
@@ -351,22 +392,28 @@ export async function getTrendingMusic(req: Request, res: Response) {
         'Shreya Ghoshal',
         'Pritam Bollywood',
       ];
-      const fetches = await Promise.all(bollywoodQueries.map((t) => queryItunes(t, 12)));
+      const fetches = await Promise.all([
+        ...bollywoodQueries.map((t) => queryItunes(t, 10)),
+        ...bollywoodQueries.map((t) => queryDeezer(t, 10)),
+      ]);
       const results = deduplicateSongs(fetches.flat());
       return res.json({ success: true, genre, data: results });
     }
 
     if (genre === 'POP') {
       const popQueries = ['Billboard Hot 100 Pop', 'Top Viral Pop Hits 2024', 'Dua Lipa Taylor Swift'];
-      const fetches = await Promise.all(popQueries.map((t) => queryItunes(t, 15)));
+      const fetches = await Promise.all([
+        ...popQueries.map((t) => queryItunes(t, 12)),
+        ...popQueries.map((t) => queryDeezer(t, 12)),
+      ]);
       const results = deduplicateSongs(fetches.flat());
       return res.json({ success: true, genre, data: results });
     }
 
     if (genre === 'LOFI') {
       const fetches = await Promise.all([
-        queryItunes('Lofi Hip Hop Chill', 25),
-        queryItunes('Lofi Sleep Beats', 15),
+        queryItunes('Lofi Hip Hop Chill', 20),
+        queryDeezer('Lofi Beats Chillhop', 20),
       ]);
       const results = deduplicateSongs(fetches.flat());
       return res.json({ success: true, genre, data: results });
@@ -374,8 +421,8 @@ export async function getTrendingMusic(req: Request, res: Response) {
 
     if (genre === 'ISLAMIC') {
       const fetches = await Promise.all([
-        queryItunes('Maher Zain', 20),
-        queryItunes('Sami Yusuf Nasheed', 20),
+        queryItunes('Maher Zain', 15),
+        queryDeezer('Maher Zain Sami Yusuf', 15),
       ]);
       const results = deduplicateSongs(fetches.flat());
       return res.json({ success: true, genre, data: results });
@@ -383,8 +430,8 @@ export async function getTrendingMusic(req: Request, res: Response) {
 
     if (genre === 'HIPHOP') {
       const fetches = await Promise.all([
-        queryItunes('Global Hip Hop Top Hits', 25),
-        queryItunes('Rap Viral Hits', 15),
+        queryItunes('Global Hip Hop Top Hits', 20),
+        queryDeezer('Hip Hop Rap Hits', 20),
       ]);
       const results = deduplicateSongs(fetches.flat());
       return res.json({ success: true, genre, data: results });
@@ -392,8 +439,8 @@ export async function getTrendingMusic(req: Request, res: Response) {
 
     if (genre === 'ROCK') {
       const fetches = await Promise.all([
-        queryItunes('Alternative Rock Hits', 25),
-        queryItunes('Classic Rock Anthems', 15),
+        queryItunes('Alternative Rock Hits', 20),
+        queryDeezer('Classic Rock Band Hits', 20),
       ]);
       const results = deduplicateSongs(fetches.flat());
       return res.json({ success: true, genre, data: results });
@@ -401,8 +448,8 @@ export async function getTrendingMusic(req: Request, res: Response) {
 
     // Default 'TRENDING'
     const trendingFetches = await Promise.all([
-      queryItunes('Billboard Top Hits 2024', 25),
-      queryItunes('Viral Top 50 Global', 25),
+      queryItunes('Billboard Top Hits 2024', 20),
+      queryDeezer('Top Hits Global 2024', 20),
     ]);
     const results = deduplicateSongs(trendingFetches.flat());
 

@@ -771,22 +771,30 @@ function MessagesContent() {
     }
   };
 
-  // ── Voice Message Recording Handlers ──────────────────────────────
+  // ── Voice Message Recording Handlers (256kbps Studio Master Opus) ──
   const startVoiceRecording = async () => {
     if (isRecordingVoice || !activeChatId) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 2,
+        },
+      });
       voiceStreamRef.current = stream;
       audioChunksRef.current = [];
       setRecordingDuration(0);
 
-      let options: MediaRecorderOptions = { audioBitsPerSecond: 128000 };
+      let options: MediaRecorderOptions = { audioBitsPerSecond: 256000 };
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 128000 };
+        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 256000 };
       } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm', audioBitsPerSecond: 128000 };
+        options = { mimeType: 'audio/webm', audioBitsPerSecond: 256000 };
       } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 128000 };
+        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 256000 };
       }
 
       const recorder = new MediaRecorder(stream, options);
