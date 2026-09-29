@@ -1,0 +1,7 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.Nuraiyan" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#070A12</item>
+        <item name="android:navigationBarColor">#070A12</item>
+        <item name="android:windowBackground">#070A12</item>
+    </style>
+</resources>
