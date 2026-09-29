@@ -4,16 +4,18 @@ export const HIGH_QUALITY_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   echoCancellation: true,
   noiseSuppression: true,
   autoGainControl: true,
+  sampleRate: 48000,
+  channelCount: 2,
 };
 
 export const HIGH_QUALITY_VIDEO_CONSTRAINTS: MediaTrackConstraints = {
-  width: { ideal: 1280, max: 1920 },
-  height: { ideal: 720, max: 1080 },
-  frameRate: { ideal: 30, max: 30 },
+  width: { ideal: 1920, max: 1920 },
+  height: { ideal: 1080, max: 1080 },
+  frameRate: { ideal: 30, max: 60 },
   facingMode: 'user',
 };
 
-// ── Tune Opus SDP: WhatsApp & FaceTime Fullband Profile (96kbps, 48kHz, FEC, Continuous Stream) ──
+// ── Tune Opus SDP: Studio Master 128kbps Fullband Profile (48kHz, Stereo, FEC, Continuous Stream) ──
 export function tuneOpusSDP(sdp: string): string {
   if (!sdp) return sdp;
   return sdp.replace(/a=fmtp:(\d+)\s+([^\r\n]+)/g, (match: string, pt: string, params: string) => {
@@ -26,14 +28,17 @@ export function tuneOpusSDP(sdp: string): string {
         }
       });
 
-      // Standard Fullband Opus parameters for crystal clear, continuous, dropout-free speech
+      // Studio Master Opus parameters for lossless-grade, continuous, dropout-free speech
       paramMap.set('minptime', '10');
       paramMap.set('ptime', '20');
-      paramMap.set('maxaveragebitrate', '96000'); // 96kbps Fullband Broadcast Quality
+      paramMap.set('maxaveragebitrate', '128000'); // 128kbps Studio Master Quality
       paramMap.set('maxplaybackrate', '48000');   // 48kHz Full spectrum (20Hz - 20,000Hz)
       paramMap.set('sprop-maxcapturerate', '48000');
       paramMap.set('useinbandfec', '1');         // In-band forward error correction for packet loss recovery
       paramMap.set('usedtx', '0');               // Zero discontinuous transmission - 100% continuous uninterrupted audio
+      paramMap.set('stereo', '1');               // Full stereo acoustic width
+      paramMap.set('sprop-stereo', '1');
+      paramMap.set('cbr', '1');                  // Constant bitrate prevents stuttering on fluctuating mobile networks
 
       const tunedParams = Array.from(paramMap.entries())
         .map(([k, v]) => (v ? `${k}=${v}` : k))
@@ -202,7 +207,7 @@ export class WebRTCManager {
     }
   }
 
-  // 3. Optimize Senders for Max Quality (96kbps Fullband Opus + 2.5Mbps 720p/1080p 30fps HD video)
+  // 3. Optimize Senders for Max Quality (128kbps Studio Master Opus + 3.5Mbps 1080p Full HD video)
   private async optimizeSenderBitrates() {
     if (!this.peerConnection) return;
     try {
@@ -216,7 +221,7 @@ export class WebRTCManager {
 
         if (sender.track.kind === 'audio') {
           params.encodings.forEach((enc) => {
-            enc.maxBitrate = 96000; // 96kbps Fullband CD-quality voice
+            enc.maxBitrate = 128000; // 128kbps Studio Master Quality
             // @ts-ignore
             enc.priority = 'high';
             // @ts-ignore
@@ -227,14 +232,14 @@ export class WebRTCManager {
           // @ts-ignore
           params.degradationPreference = 'maintain-framerate';
           params.encodings.forEach((enc) => {
-            enc.maxBitrate = 2500000; // 2.5 Mbps 720p/1080p HD video
-            enc.maxFramerate = 30;
+            enc.maxBitrate = 3500000; // 3.5 Mbps 1080p 60fps Full HD video
+            enc.maxFramerate = 60;
             enc.scaleResolutionDownBy = 1.0;
           });
           await sender.setParameters(params);
         }
       }
-      console.log('🚀 [WebRTC] Senders successfully tuned to High Definition Bitrates (96k audio, 2.5M video)');
+      console.log('🚀 [WebRTC] Senders successfully tuned to High Definition Bitrates (128k audio, 3.5M video)');
     } catch (err) {
       console.warn('[WebRTC] Sender optimization notice:', err);
     }

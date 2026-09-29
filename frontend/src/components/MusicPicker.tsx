@@ -117,7 +117,7 @@ async function fetchItunesTracksClient(term: string, limit = 40): Promise<Select
         title: r.trackName,
         artist: r.artistName,
         url: r.previewUrl,
-        artworkUrl: (r.artworkUrl100 || r.artworkUrl60 || '').replace('100x100bb', '300x300bb'),
+        artworkUrl: (r.artworkUrl100 || r.artworkUrl60 || '').replace('100x100bb', '600x600bb').replace('60x60bb', '600x600bb'),
         // Apple iTunes preview URLs are 30-second studio clips
         duration: 30,
         startSec: 0,

@@ -780,13 +780,13 @@ function MessagesContent() {
       audioChunksRef.current = [];
       setRecordingDuration(0);
 
-      let options: MediaRecorderOptions = {};
+      let options: MediaRecorderOptions = { audioBitsPerSecond: 128000 };
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        options = { mimeType: 'audio/webm;codecs=opus' };
+        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 128000 };
       } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm' };
+        options = { mimeType: 'audio/webm', audioBitsPerSecond: 128000 };
       } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        options = { mimeType: 'audio/mp4' };
+        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 128000 };
       }
 
       const recorder = new MediaRecorder(stream, options);

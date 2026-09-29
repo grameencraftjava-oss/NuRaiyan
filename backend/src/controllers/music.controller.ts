@@ -230,7 +230,7 @@ async function queryItunes(term: string, limit = 30): Promise<FormattedSong[]> {
         artist: item.artistName,
         album: item.collectionName,
         url: item.previewUrl,
-        artworkUrl: (item.artworkUrl100 || item.artworkUrl60 || '').replace('100x100bb', '300x300bb'),
+        artworkUrl: (item.artworkUrl100 || item.artworkUrl60 || '').replace('100x100bb', '600x600bb').replace('60x60bb', '600x600bb'),
         duration: item.trackTimeMillis ? Math.round(item.trackTimeMillis / 1000) : 30,
         genre: item.primaryGenreName,
       }));
