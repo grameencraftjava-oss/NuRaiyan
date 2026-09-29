@@ -719,12 +719,14 @@ export const PostCard: React.FC<PostProps> = ({ post, onDelete }) => {
             {isMuted ? (
               <>
                 <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-                <span>Muted (Click to Play)</span>
+                <span className="hidden sm:inline">Muted (Click to Play)</span>
+                <span className="sm:hidden">Muted</span>
               </>
             ) : (
               <>
                 <Volume2 className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-                <span>Sound On (Click to Mute)</span>
+                <span className="hidden sm:inline">Sound On (Click to Mute)</span>
+                <span className="sm:hidden">Playing</span>
               </>
             )}
           </button>

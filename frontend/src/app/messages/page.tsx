@@ -31,6 +31,7 @@ import {
   Pause,
   X,
   Trash2,
+  ChevronLeft,
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { api, resolveMediaUrl } from '../../lib/api';
@@ -1038,13 +1039,13 @@ function MessagesContent() {
     <div className="min-h-screen bg-[#070A12] text-slate-100 flex flex-col selection:bg-rose-500/30 selection:text-rose-200">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto w-full px-4 flex gap-6 py-6 flex-1 h-[calc(100vh-5rem)]">
+      <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 flex gap-6 py-2 sm:py-6 pb-20 lg:pb-6 flex-1 h-[calc(100vh-4.5rem)]">
         <Sidebar />
 
         {/* Messenger Container */}
         <div className="flex-1 bg-[#111726]/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/[0.08] flex overflow-hidden">
           {/* Chat List (Left Pane) */}
-          <div className="w-80 sm:w-96 border-r border-white/[0.08] flex flex-col bg-white/[0.01]">
+          <div className={`w-full md:w-80 lg:w-96 border-r border-white/[0.08] flex-col bg-white/[0.01] ${activeChat ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b border-white/[0.08]">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-extrabold text-lg text-white">Messages</h2>
@@ -1254,10 +1255,17 @@ function MessagesContent() {
 
           {/* Chat Window (Right Pane) */}
           {activeChat ? (
-            <div className="flex-1 flex flex-col bg-white/[0.01]">
+            <div className={`flex-1 flex-col bg-white/[0.01] ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
               {/* Header */}
-              <div className="p-4 border-b border-white/[0.08] flex items-center justify-between bg-[#111726]/60 backdrop-blur-md z-10">
-                <div className="flex items-center gap-3">
+              <div className="p-3 sm:p-4 border-b border-white/[0.08] flex items-center justify-between bg-[#111726]/60 backdrop-blur-md z-10">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    onClick={() => setActiveChatId(null)}
+                    className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
+                    title="Back to conversation list"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
                   <div className="relative shrink-0">
                     <UserAvatar
                       avatarUrl={activeChat.avatarUrl}

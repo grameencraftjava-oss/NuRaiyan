@@ -78,8 +78,9 @@ export function AnimatedAuthCard({
     return () => clearInterval(timer);
   }, [quotes.length]);
 
-  // 3D Card Tilt Effect on Mouse Move
+  // 3D Card Tilt Effect on Mouse Move (Desktop only)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (typeof window !== 'undefined' && (window.innerWidth < 768 || 'ontouchstart' in window)) return;
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -95,8 +96,10 @@ export function AnimatedAuthCard({
     setTilt({ x: 0, y: 0 });
   };
 
-  // Interactive Particle Canvas (Floating Hearts & Stardust)
+  // Interactive Particle Canvas (Floating Hearts & Stardust - Desktop only)
   useEffect(() => {
+    if (typeof window !== 'undefined' && (window.innerWidth < 768 || 'ontouchstart' in window)) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -130,16 +133,16 @@ export function AnimatedAuthCard({
 
     const colors = ['#f43f5e', '#fb7185', '#ec4899', '#f472b6', '#a855f7', '#fbbf24'];
     const particles: Particle[] = [];
-    const maxParticles = 38;
+    const maxParticles = 18;
 
     const createParticle = (originX?: number, originY?: number): Particle => {
       const typeChoice = Math.random();
       return {
         x: originX !== undefined ? originX : Math.random() * width,
         y: originY !== undefined ? originY : height + Math.random() * 20,
-        size: Math.random() * 8 + 4,
-        speedY: -(Math.random() * 0.8 + 0.3),
-        speedX: (Math.random() - 0.5) * 0.6,
+        size: Math.random() * 7 + 3,
+        speedY: -(Math.random() * 0.6 + 0.25),
+        speedX: (Math.random() - 0.5) * 0.4,
         opacity: Math.random() * 0.5 + 0.3,
         fadeSpeed: Math.random() * 0.003 + 0.001,
         type: typeChoice < 0.65 ? 'heart' : typeChoice < 0.85 ? 'star' : 'circle',
@@ -161,15 +164,11 @@ export function AnimatedAuthCard({
       ctx.rotate(angle);
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
       ctx.fillStyle = color;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = color;
 
       ctx.beginPath();
       const topCurveHeight = size * 0.3;
       ctx.moveTo(0, topCurveHeight);
-      // top left curve
       ctx.bezierCurveTo(-size / 2, -topCurveHeight, -size, topCurveHeight / 3, 0, size);
-      // top right curve
       ctx.bezierCurveTo(size, topCurveHeight / 3, size / 2, -topCurveHeight, 0, topCurveHeight);
       ctx.closePath();
       ctx.fill();
@@ -181,8 +180,6 @@ export function AnimatedAuthCard({
       ctx.translate(x, y);
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
       ctx.fillStyle = color;
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = color;
 
       ctx.beginPath();
       for (let i = 0; i < 4; i++) {

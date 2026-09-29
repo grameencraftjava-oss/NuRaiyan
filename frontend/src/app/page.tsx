@@ -355,27 +355,31 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Main Split Section: Romantic Letter + Auth Form */}
-        <main className="relative z-10 max-w-7xl mx-auto w-full px-6 py-10 lg:py-16 flex-1 flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-14">
+        {/* Main Split Section: Romantic Letter + Auth Form (Auth form first on mobile) */}
+        <main className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 lg:py-16 flex-1 flex flex-col-reverse lg:flex-row items-center justify-center gap-8 lg:gap-14">
           {/* Left Column: Unique Animated Falling Petals & Floating Heart Letter */}
-          <AnimatedLoveLetter />
+          <div className="w-full lg:flex-1 max-w-xl">
+            <AnimatedLoveLetter />
+          </div>
 
           {/* Right Column: Moving Unique Animated Love Auth Card */}
-          <AnimatedAuthCard
-            authTab={authTab}
-            setAuthTab={setAuthTab}
-            loginData={loginData as any}
-            setLoginData={setLoginData as any}
-            registerData={registerData as any}
-            setRegisterData={setRegisterData as any}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            authLoading={authLoading}
-            authError={authError}
-            authSuccess={authSuccess}
-            onLoginSubmit={handleLoginSubmit}
-            onRegisterSubmit={handleRegisterSubmit}
-          />
+          <div className="w-full lg:flex-1 max-w-md">
+            <AnimatedAuthCard
+              authTab={authTab}
+              setAuthTab={setAuthTab}
+              loginData={loginData as any}
+              setLoginData={setLoginData as any}
+              registerData={registerData as any}
+              setRegisterData={setRegisterData as any}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              authLoading={authLoading}
+              authError={authError}
+              authSuccess={authSuccess}
+              onLoginSubmit={handleLoginSubmit}
+              onRegisterSubmit={handleRegisterSubmit}
+            />
+          </div>
         </main>
 
         {/* Footer */}
@@ -405,7 +409,7 @@ export default function Home() {
       <Navbar onOpenCreatePost={() => setIsCreatePostOpen(true)} />
 
       {/* Main Layout Container */}
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 flex justify-between gap-6 py-6 flex-1 relative z-10">
+      <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-6 flex justify-between gap-6 py-4 sm:py-6 pb-24 lg:pb-8 flex-1 relative z-10">
         {/* Left Sidebar Navigation */}
         <Sidebar />
 
@@ -583,7 +587,7 @@ export default function Home() {
               </div>
 
               {/* Feature Cards Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Photos & Video */}
                 <button
                   onClick={() => setIsCreatePostOpen(true)}

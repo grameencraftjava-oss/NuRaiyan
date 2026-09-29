@@ -273,3 +273,28 @@
   animation: beam-sweep 12s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+/* ────────────────────────────────────────────────────────────
+   Mobile & Low-Power Performance Rules
+   Disables heavy GPU blur re-rasterization on mobile screens
+   ──────────────────────────────────────────────────────────── */
+html,
+body {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .animate-aurora-1,
+  .animate-aurora-2,
+  .animate-aurora-3,
+  .animate-aurora-4,
+  .animate-beam,
+  .animate-love-glow,
+  .animate-float-love-1,
+  .animate-float-love-2,
+  .animate-float-love-3,
+  .animate-float-love-4 {
+    animation: none !important;
+  }
+}
+

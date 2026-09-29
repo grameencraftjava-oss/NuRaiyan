@@ -104,8 +104,6 @@ export function AnimatedLoveLetter() {
       ctx.rotate(angle);
       ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
       ctx.fillStyle = color;
-      ctx.shadowBlur = 6;
-      ctx.shadowColor = color;
 
       // Draw elegant organic petal
       ctx.beginPath();
