@@ -20,13 +20,11 @@ const getBaseApiUrl = (): string => {
       return `${window.location.protocol}//${hostname}:${port}/api`;
     }
 
-    // When deployed online on a domain or cloud provider (e.g. Vercel, Railway, Render)
-    if (envUrl) {
-      return envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/$/, '')}/api`;
-    }
+    // When deployed online on a cloud domain (e.g. Vercel)
+    return 'https://nuraiyan-backend.onrender.com/api';
   }
 
-  const raw = envUrl || 'http://127.0.0.1:5001';
+  const raw = envUrl || 'https://nuraiyan-backend.onrender.com/api';
   return raw.endsWith('/api') ? raw : `${raw.replace(/\/$/, '')}/api`;
 };
 

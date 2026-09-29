@@ -1,9 +1,36 @@
 import { io, Socket } from 'socket.io-client';
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://127.0.0.1:5001';
+const getSocketUrl = (): string => {
+  const envSocket = process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (envSocket && envSocket !== 'http://127.0.0.1:5001' && envSocket !== 'http://localhost:5001') {
+    return envSocket.replace(/\/$/, '');
+  }
+
+  const envApi = process.env.NEXT_PUBLIC_API_URL;
+  if (envApi && envApi !== 'http://127.0.0.1:5001' && envApi !== 'http://localhost:5001') {
+    return envApi.replace(/\/api$/, '').replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined') {
+    const isLocal =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.');
+
+    if (isLocal) {
+      const port = '5001';
+      const hostname = window.location.hostname || 'localhost';
+      return `${window.location.protocol}//${hostname}:${port}`;
+    }
+
+    return 'https://nuraiyan-backend.onrender.com';
+  }
+
+  return 'https://nuraiyan-backend.onrender.com';
+};
+
+const BACKEND_URL = getSocketUrl();
 
 let socket: Socket | null = null;
 
