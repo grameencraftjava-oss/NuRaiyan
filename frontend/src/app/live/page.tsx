@@ -59,7 +59,7 @@ const BROADCAST_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
 };
 
 // ── Optimize Opus audio bitrate on all audio senders of a PeerConnection ──
-async function optimizeAudioBitrate(pc: RTCPeerConnection, bitrate = 96000) {
+async function optimizeAudioBitrate(pc: RTCPeerConnection, bitrate = 320000) {
   try {
     const senders = pc.getSenders();
     for (const sender of senders) {
@@ -76,10 +76,19 @@ async function optimizeAudioBitrate(pc: RTCPeerConnection, bitrate = 96000) {
           enc.priority = 'high';
         });
         await sender.setParameters(params);
+      } else if (sender.track?.kind === 'video') {
+        const params = sender.getParameters();
+        if (params.encodings && params.encodings.length > 0) {
+          params.encodings.forEach((enc) => {
+            enc.maxBitrate = 6000000; // 6.0 Mbps 1080p 60fps broadcast
+            enc.maxFramerate = 60;
+          });
+          await sender.setParameters(params);
+        }
       }
     }
   } catch (err) {
-    console.warn('[Live] Audio bitrate optimization skipped:', err);
+    console.warn('[Live] Bitrate optimization skipped:', err);
   }
 }
 
@@ -108,12 +117,12 @@ function enhanceSDPAudio(sdp: string): string {
       // usedtx=0 ensures continuous packet transmission (never mutes in between words)
       // cbr=1 ensures constant bitrate without packet loss drops
       // useinbandfec=1 recovers any dropped packets automatically
-      fmtpLine += ';maxaveragebitrate=256000;stereo=1;sprop-stereo=1;cbr=1;usedtx=0;useinbandfec=1;minptime=10;ptime=20';
+      fmtpLine += ';maxaveragebitrate=320000;stereo=1;sprop-stereo=1;cbr=1;usedtx=0;useinbandfec=1;minptime=10;ptime=20';
       enhanced = enhanced.replace(fmtpMatch[0], fmtpLine);
     } else {
       enhanced = enhanced.replace(
         opusMatch[0],
-        `${opusMatch[0]}\r\na=fmtp:${payload} minptime=10;ptime=20;maxaveragebitrate=256000;stereo=1;sprop-stereo=1;useinbandfec=1;usedtx=0;cbr=1`
+        `${opusMatch[0]}\r\na=fmtp:${payload} minptime=10;ptime=20;maxaveragebitrate=320000;stereo=1;sprop-stereo=1;useinbandfec=1;usedtx=0;cbr=1`
       );
     }
   }

@@ -95,8 +95,8 @@ export const uploadMiddleware = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 4096 * 1024 * 1024, // 4GB (4096MB) max limit for ultra-large 4K video, big PDFs, and heavy archives
-    files: 10,
+    fileSize: 5120 * 1024 * 1024, // 5GB (5120MB) max limit for uncompressed 4K video, lossless audio, raw files
+    files: 20,
   },
 });
 

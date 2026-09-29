@@ -1,5 +1,3 @@
-// WebRTC Peer Connection Manager for 1-1 Audio and Video Calls (Studio Quality & Ultra-low Latency)
-
 export const HIGH_QUALITY_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   echoCancellation: true,
   noiseSuppression: true,
@@ -9,13 +7,13 @@ export const HIGH_QUALITY_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
 };
 
 export const HIGH_QUALITY_VIDEO_CONSTRAINTS: MediaTrackConstraints = {
-  width: { ideal: 1920, max: 1920 },
-  height: { ideal: 1080, max: 1080 },
-  frameRate: { ideal: 30, max: 60 },
+  width: { ideal: 1920, max: 3840 },
+  height: { ideal: 1080, max: 2160 },
+  frameRate: { ideal: 60, max: 60 },
   facingMode: 'user',
 };
 
-// ── Tune Opus SDP: Studio Master 256kbps Fullband Profile (48kHz, Stereo, FEC, Continuous Stream) ──
+// ── Tune Opus SDP: Studio Master 510kbps Fullband Profile (48kHz, Stereo, FEC, Continuous Stream) ──
 export function tuneOpusSDP(sdp: string): string {
   if (!sdp) return sdp;
   return sdp.replace(/a=fmtp:(\d+)\s+([^\r\n]+)/g, (match: string, pt: string, params: string) => {
@@ -31,7 +29,7 @@ export function tuneOpusSDP(sdp: string): string {
       // Studio Master Opus parameters for lossless-grade, continuous, dropout-free speech
       paramMap.set('minptime', '10');
       paramMap.set('ptime', '20');
-      paramMap.set('maxaveragebitrate', '256000'); // 256kbps Studio Broadcast Quality
+      paramMap.set('maxaveragebitrate', '510000'); // 510kbps Ultimate Studio Master Quality
       paramMap.set('maxplaybackrate', '48000');    // 48kHz Full spectrum (20Hz - 20,000Hz)
       paramMap.set('sprop-maxcapturerate', '48000');
       paramMap.set('useinbandfec', '1');          // In-band forward error correction for packet loss recovery
@@ -207,7 +205,7 @@ export class WebRTCManager {
     }
   }
 
-  // 3. Optimize Senders for Max Quality (256kbps Studio Master Opus + 4.5Mbps 1080p Full HD video)
+  // 3. Optimize Senders for Max Quality (510kbps Studio Master Opus + 6.0Mbps 1080p/4K 60fps video)
   private async optimizeSenderBitrates() {
     if (!this.peerConnection) return;
     try {
@@ -221,7 +219,7 @@ export class WebRTCManager {
 
         if (sender.track.kind === 'audio') {
           params.encodings.forEach((enc) => {
-            enc.maxBitrate = 256000; // 256kbps Studio Master Quality
+            enc.maxBitrate = 510000; // 510kbps Studio Master Quality
             // @ts-ignore
             enc.priority = 'high';
             // @ts-ignore
@@ -232,14 +230,14 @@ export class WebRTCManager {
           // @ts-ignore
           params.degradationPreference = 'maintain-framerate';
           params.encodings.forEach((enc) => {
-            enc.maxBitrate = 4500000; // 4.5 Mbps 1080p 60fps Full HD video
+            enc.maxBitrate = 6000000; // 6.0 Mbps 4K/1080p 60fps Full HD video
             enc.maxFramerate = 60;
             enc.scaleResolutionDownBy = 1.0;
           });
           await sender.setParameters(params);
         }
       }
-      console.log('🚀 [WebRTC] Senders successfully tuned to High Definition Bitrates (256k audio, 4.5M video)');
+      console.log('🚀 [WebRTC] Senders successfully tuned to Ultra High Definition Bitrates (510k audio, 6.0M video)');
     } catch (err) {
       console.warn('[WebRTC] Sender optimization notice:', err);
     }

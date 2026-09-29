@@ -771,7 +771,7 @@ function MessagesContent() {
     }
   };
 
-  // ── Voice Message Recording Handlers (256kbps Studio Master Opus) ──
+  // ── Voice Message Recording Handlers (320kbps CD Studio Master Opus) ──
   const startVoiceRecording = async () => {
     if (isRecordingVoice || !activeChatId) return;
     try {
@@ -788,13 +788,13 @@ function MessagesContent() {
       audioChunksRef.current = [];
       setRecordingDuration(0);
 
-      let options: MediaRecorderOptions = { audioBitsPerSecond: 256000 };
+      let options: MediaRecorderOptions = { audioBitsPerSecond: 320000 };
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 256000 };
+        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 320000 };
       } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm', audioBitsPerSecond: 256000 };
+        options = { mimeType: 'audio/webm', audioBitsPerSecond: 320000 };
       } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 256000 };
+        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 320000 };
       }
 
       const recorder = new MediaRecorder(stream, options);
