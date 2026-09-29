@@ -2,9 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../lib/security';
 import { prisma } from '../lib/prisma';
 
-export interface AuthenticatedRequest extends Request {
+export type AuthenticatedRequest = Request & {
   user?: TokenPayload;
-}
+  file?: any;
+  files?: any;
+  cookies?: any;
+};
 
 export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   // Check authorization header or HTTP-only cookie

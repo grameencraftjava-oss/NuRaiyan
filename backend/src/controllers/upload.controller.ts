@@ -15,10 +15,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // ── Secure Multer Disk Storage Engine ────────────────────────────
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: any, file: any, cb: any) => {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req: any, file: any, cb: any) => {
     const uniqueId = crypto.randomUUID();
     const safeExt = path.extname(file.originalname).toLowerCase() || '.bin';
     cb(null, `${Date.now()}-${uniqueId}${safeExt}`);
@@ -74,7 +74,7 @@ const ALLOWED_MIME_TYPES = [
   'application/octet-stream',
 ];
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (req: any, file: any, cb: any) => {
   const ext = path.extname(file.originalname).toLowerCase();
   const safeExtensions = [
     '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.bmp', '.heic',
@@ -153,7 +153,7 @@ export async function uploadSingleMedia(req: AuthenticatedRequest, res: Response
 // ── Controller: Upload Multiple Files ────────────────────────────
 export async function uploadMultipleMedia(req: AuthenticatedRequest, res: Response) {
   try {
-    const files = req.files as Express.Multer.File[];
+    const files = (req.files || []) as any[];
     if (!files || files.length === 0) {
       return res.status(400).json({
         success: false,
