@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database (Relational Data: Users, Posts, Stories, Likes, Comments, Calls)
+  postgres:
+    image: postgres:16-alpine
+    container_name: social_network_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: social_network
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 2. Redis (Caching, 24-hr Story Expiry, Real-time WebSockets Pub/Sub)
+  redis:
+    image: redis:7-alpine
+    container_name: social_network_redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+
+  # 3. MongoDB (Document Storage, Chat Logs, Unstructured Big Data)
+  mongodb:
+    image: mongo:7-jammy
+    container_name: social_network_mongodb
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodata:/data/db
+
+volumes:
+  pgdata:
+  redisdata:
+  mongodata:

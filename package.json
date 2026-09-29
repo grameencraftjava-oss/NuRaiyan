@@ -1,0 +1,31 @@
+{
+  "name": "nuraiyan-social-network",
+  "version": "1.0.0",
+  "description": "Nuraiyan - Modern Real-Time Social Network Platform (Mac M-Series & Cross-Platform)",
+  "private": true,
+  "scripts": {
+    "setup:mac": "bash ./setup-mac.sh",
+    "dev": "bash ./start-dev.sh",
+    "start": "bash ./start-local.sh",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "prisma:generate": "cd backend && npx prisma generate",
+    "prisma:migrate": "cd backend && npx prisma migrate dev",
+    "prisma:studio": "cd backend && npx prisma studio"
+  },
+  "keywords": [
+    "social-network",
+    "nextjs",
+    "express",
+    "prisma",
+    "webrtc",
+    "socketio"
+  ],
+  "author": "Super Dev",
+  "license": "MIT"
+}

@@ -1,0 +1,614 @@
+// ====================================================
+// Enterprise-Grade Social Network Database Schema v2
+// PostgreSQL + Prisma ORM
+// New in v2:
+//   - Music/Song on Posts & Stories
+//   - Group Calls (multi-participant)
+//   - Group Messaging (already had Conversation.isGroup, enhanced)
+//   - Media upload tracking (photo/video with file size, mime type)
+//   - Chat History persistence (no message deletion without explicit action)
+//   - Saved Posts collection
+//   - 2FA fields, device sessions for security
+// ====================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
+}
+
+// ────────────────────────────────────────────────────────────
+// ENUMS
+// ────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  CREATOR
+  MODERATOR
+  ADMIN
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  HAHA
+  WOW
+  SAD
+  ANGRY
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  MIXED // Post with both image and video
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  GIF
+  CALL_LOG
+  SYSTEM // group join/leave messages
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+enum CallStatus {
+  CALLING
+  RINGING
+  ONGOING
+  COMPLETED
+  MISSED
+  DECLINED
+}
+
+enum LiveStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
+enum PostPrivacy {
+  PUBLIC
+  FRIENDS
+  ONLY_ME
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// ────────────────────────────────────────────────────────────
+// USER & SECURITY
+// ────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(uuid())
+  username          String    @unique
+  email             String    @unique
+  phone             String?   @unique
+  passwordHash      String
+  displayName       String
+  bio               String?   @db.VarChar(500)
+  avatarUrl         String?
+  coverUrl          String?
+  isVerified        Boolean   @default(false)
+  isPrivate         Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  isSuspended       Boolean   @default(false)
+  // Facebook-Style Profile Details (Works at, Education, Places, Relationship)
+  worksAt           String?   @db.VarChar(150)
+  education         String?   @db.VarChar(150)
+  college           String?   @db.VarChar(150)
+  school            String?   @db.VarChar(150)
+  location          String?   @db.VarChar(100)
+  hometown          String?   @db.VarChar(100)
+  relationship      String?   @db.VarChar(100)
+  website           String?   @db.VarChar(150)
+  // Two-Factor Authentication
+  twoFactorSecret   String?
+  twoFactorEnabled  Boolean   @default(false)
+  // Account role
+  role              Role      @default(USER)
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastSeenAt        DateTime  @default(now())
+
+  // ── Relationships ──────────────────────────────────────────
+  posts             Post[]
+  likes             Like[]
+  comments          Comment[]
+  shares            Share[]
+  stories           Story[]
+  storyViews        StoryView[]
+  savedPosts        SavedPost[]
+  mediaFiles        MediaFile[]
+
+  // Follow System
+  followers         Follow[]  @relation("UserFollowers")
+  following         Follow[]  @relation("UserFollowing")
+
+  // Friendship System (Facebook-Style)
+  sentFriendRequests     Friendship[] @relation("SentFriendRequests")
+  receivedFriendRequests Friendship[] @relation("ReceivedFriendRequests")
+
+  // Messaging & Group Messaging
+  messagesSent      Message[]
+  conversations     ConversationParticipant[]
+
+  // 1-1 and Group Calls
+  callParticipations CallParticipant[]
+
+  // Live Streams
+  liveStreams       LiveStream[]
+  liveComments      LiveComment[]
+
+  // Notifications & Security
+  notificationsReceived Notification[] @relation("Recipient")
+  notificationsTriggered Notification[] @relation("Sender")
+  refreshTokens     RefreshToken[]
+  deviceSessions    DeviceSession[]
+  blocksMade        Block[]   @relation("Blocker")
+  blocksReceived    Block[]   @relation("Blocked")
+  reportsMade       Report[]  @relation("Reporter")
+  reportsReceived   Report[]  @relation("Reported")
+
+  @@index([username])
+  @@index([email])
+}
+
+// Device sessions for advanced security (detect suspicious logins)
+model DeviceSession {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceName   String?
+  deviceType   String?  // mobile, desktop, tablet
+  ipAddress    String?
+  userAgent    String?
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([userId, isActive])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String?
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ────────────────────────────────────────────────────────────
+// FRIENDSHIPS (Facebook-Style Friend Request System)
+// ────────────────────────────────────────────────────────────
+
+model Friendship {
+  id         String           @id @default(uuid())
+  senderId   String
+  receiverId String
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  sender   User @relation("SentFriendRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedFriendRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId, status])
+  @@index([receiverId, status])
+}
+
+// ────────────────────────────────────────────────────────────
+// MEDIA FILES (centralized upload tracking)
+// ────────────────────────────────────────────────────────────
+
+model MediaFile {
+  id          String    @id @default(uuid())
+  uploaderId  String
+  uploader    User      @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  url         String    // CDN/cloud storage URL
+  thumbnailUrl String?
+  mimeType    String    // image/jpeg, video/mp4, audio/mpeg
+  mediaType   MediaType
+  fileSize    Int       // bytes
+  duration    Int?      // seconds (for video/audio)
+  width       Int?      // px
+  height      Int?      // px
+  isProcessed Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([uploaderId])
+}
+
+// ────────────────────────────────────────────────────────────
+// POSTS (Photo, Video, Text — with optional Music)
+// ────────────────────────────────────────────────────────────
+
+model Post {
+  id            String      @id @default(uuid())
+  authorId      String
+  author        User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content       String?     @db.Text
+  // Media: multiple photos/videos stored as URLs
+  mediaUrls     String[]    @default([])
+  mediaType     MediaType?
+  // 🎵 Background Music on Post (like Instagram Reels music)
+  musicTitle    String?     // e.g. "Bohemian Rhapsody"
+  musicArtist   String?     // e.g. "Queen"
+  musicUrl      String?     // audio preview URL (30-second clip)
+  musicStartSec Int?        @default(0) // start at X seconds in the song
+
+  privacy       PostPrivacy @default(PUBLIC)
+  location      String?     // geo-tag "Dhaka, Bangladesh"
+  likesCount    Int         @default(0)
+  commentsCount Int         @default(0)
+  sharesCount   Int         @default(0)
+  viewsCount    Int         @default(0)
+  isArchived    Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  likes         Like[]
+  comments      Comment[]
+  shares        Share[]
+  savedBy       SavedPost[]
+
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([privacy, createdAt(sort: Desc)])
+}
+
+// Saved/Bookmarked posts (Facebook Save, Instagram Save)
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  collectionName String? @default("All Saved") // custom collections
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model Like {
+  id        String       @id @default(uuid())
+  userId    String
+  postId    String
+  type      ReactionType @default(LIKE)
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  userId    String
+  postId    String
+  parentId  String?
+  content   String    @db.Text
+  mediaUrl  String?   // photo/gif in comment
+  likesCount Int      @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("NestedReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("NestedReplies")
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+}
+
+model Share {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  caption   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+// ────────────────────────────────────────────────────────────
+// STORIES (24-hour disappearing — with Music support)
+// ────────────────────────────────────────────────────────────
+
+model Story {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaUrl    String
+  mediaType   MediaType
+  caption     String?     @db.VarChar(280)
+  // 🎵 Music on Story (like Instagram/Snapchat)
+  musicTitle  String?
+  musicArtist String?
+  musicUrl    String?     // audio clip URL
+  musicStartSec Int?      @default(0)
+  musicEndSec   Int?      // optional end time
+  // Story expiry (Snapchat/Instagram 24h auto-delete)
+  expiresAt   DateTime
+  // Engagement
+  viewsCount  Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  views       StoryView[]
+
+  @@index([userId, expiresAt])
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer    User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId])
+}
+
+// ────────────────────────────────────────────────────────────
+// MESSAGING — 1-on-1 & Group Chat with persistent history
+// ────────────────────────────────────────────────────────────
+
+model Conversation {
+  id              String   @id @default(uuid())
+  isGroup         Boolean  @default(false)
+  name            String?
+  description     String?  @db.VarChar(300)
+  avatarUrl       String?
+  // Group admin
+  adminId         String?
+  // Encryption
+  isEncrypted     Boolean  @default(true)  // E2EE by default
+  lastMessageAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  participants    ConversationParticipant[]
+  messages        Message[]
+
+  @@index([lastMessageAt(sort: Desc)])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  userId         String
+  nickname       String?      // custom nickname in group
+  isAdmin        Boolean      @default(false)
+  isMuted        Boolean      @default(false)
+  lastReadAt     DateTime     @default(now())
+  joinedAt       DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String?     @db.Text
+  mediaUrl       String?
+  messageType    MessageType @default(TEXT)
+  // Encryption
+  isEncrypted    Boolean     @default(true)
+  encryptedKey   String?     // per-message symmetric key (for E2EE)
+  // Disappearing messages (Snapchat Vanish Mode)
+  isDisappearing Boolean     @default(false)
+  expiresAt      DateTime?
+  // Status
+  isEdited       Boolean     @default(false)
+  isDeleted      Boolean     @default(false) // soft delete
+  // Reply threading
+  replyToId      String?
+  replyTo        Message?    @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        Message[]   @relation("MessageReplies")
+
+  readBy         MessageRead[]
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+// Track who has read each message (for delivery/seen receipts in group chat)
+model MessageRead {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+// ────────────────────────────────────────────────────────────
+// CALLS — 1-on-1 AND GROUP Audio/Video Calls
+// ────────────────────────────────────────────────────────────
+
+model CallSession {
+  id              String     @id @default(uuid())
+  isGroup         Boolean    @default(false)
+  conversationId  String?    // linked to group conversation if group call
+  type            CallType   @default(VIDEO)
+  status          CallStatus @default(CALLING)
+  channelName     String     @unique // WebRTC room ID
+  // Duration tracking
+  startedAt       DateTime   @default(now())
+  answeredAt      DateTime?
+  endedAt         DateTime?
+  durationSeconds Int?
+
+  participants    CallParticipant[]
+
+  @@index([channelName])
+}
+
+model CallParticipant {
+  id         String      @id @default(uuid())
+  callId     String
+  userId     String
+  isInitiator Boolean    @default(false)
+  joinedAt   DateTime    @default(now())
+  leftAt     DateTime?
+  isMuted    Boolean     @default(false)
+  isVideoOff Boolean     @default(false)
+
+  call       CallSession @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([callId, userId])
+}
+
+// ────────────────────────────────────────────────────────────
+// LIVE STREAMING
+// ────────────────────────────────────────────────────────────
+
+model LiveStream {
+  id           String     @id @default(uuid())
+  hostId       String
+  title        String
+  description  String?    @db.VarChar(500)
+  thumbnailUrl String?
+  streamKey    String     @unique
+  status       LiveStatus @default(LIVE)
+  viewerCount  Int        @default(0)
+  peakViewers  Int        @default(0)
+  // Music playing during stream
+  musicTitle   String?
+  musicArtist  String?
+  startedAt    DateTime   @default(now())
+  endedAt      DateTime?
+
+  host         User       @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  comments     LiveComment[]
+
+  @@index([status, startedAt(sort: Desc)])
+}
+
+model LiveComment {
+  id        String     @id @default(uuid())
+  streamId  String
+  userId    String
+  text      String     @db.VarChar(300)
+  createdAt DateTime   @default(now())
+
+  stream    LiveStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([streamId, createdAt])
+}
+
+// ────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ────────────────────────────────────────────────────────────
+
+model Notification {
+  id          String   @id @default(uuid())
+  recipientId String
+  senderId    String
+  type        String   // LIKE, COMMENT, FOLLOW, MESSAGE, CALL, LIVE, GROUP_INVITE
+  entityId    String?  // Post ID, Stream ID, etc.
+  entityType  String?  // POST, STORY, CALL, LIVE
+  message     String
+  imageUrl    String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  recipient   User     @relation("Recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  sender      User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt])
+}
+
+// ────────────────────────────────────────────────────────────
+// SAFETY: Block & Report
+// ────────────────────────────────────────────────────────────
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reporterId  String
+  reportedId  String
+  entityId    String?  // post/comment ID
+  entityType  String?  // POST, COMMENT, USER, STORY
+  reason      String   // SPAM, ABUSE, FAKE, HATE_SPEECH, etc.
+  description String?  @db.Text
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User     @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([isResolved, createdAt])
+}

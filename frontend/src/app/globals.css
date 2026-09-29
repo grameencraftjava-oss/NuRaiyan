@@ -1,0 +1,275 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 248 250 252;
+    --foreground: 15 23 42;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Luxury / Aesthetic Story Ring */
+.story-ring-gradient {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
+
+.story-ring-gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #8b5cf6 100%);
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Floating reaction animation for Live streams */
+@keyframes float-up {
+  0% {
+    transform: translateY(0) scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-220px) scale(1.3);
+    opacity: 0;
+  }
+}
+
+.animate-float-heart {
+  animation: float-up 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Premium Minimal Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Aesthetic Love & Romantic Motion Styles (Nuraiyan Theme)
+   ──────────────────────────────────────────────────────────── */
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.18); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.12); }
+  70% { transform: scale(1); }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 2.2s ease-in-out infinite;
+}
+
+@keyframes float-love {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(0.7);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.75;
+  }
+  75% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(-90px) rotate(18deg) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.animate-float-love-1 {
+  animation: float-love 5s ease-in-out infinite;
+}
+
+.animate-float-love-2 {
+  animation: float-love 6.5s ease-in-out 1.2s infinite;
+}
+
+.animate-float-love-3 {
+  animation: float-love 5.8s ease-in-out 2.6s infinite;
+}
+
+.animate-float-love-4 {
+  animation: float-love 7s ease-in-out 3.8s infinite;
+}
+
+@keyframes love-border-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    filter: blur(14px);
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 0.9;
+    filter: blur(22px);
+    transform: scale(1.01);
+  }
+}
+
+.animate-love-glow {
+  animation: love-border-pulse 4.5s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% { transform: translateX(-150%); }
+  50%, 100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  animation: shimmer-slide 3.5s ease-in-out infinite;
+}
+
+@keyframes soft-pulse-aura {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+  50% { transform: scale(1.05) rotate(180deg); opacity: 0.85; }
+}
+
+.animate-aura-spin {
+  animation: soft-pulse-aura 18s ease-in-out infinite alternate;
+}
+
+@keyframes spin-border {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-border {
+  animation: spin-border 9s linear infinite;
+}
+
+.animate-spin-border-fast {
+  animation: spin-border 4.5s linear infinite;
+}
+
+@keyframes gradient-text-shift {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+.animate-gradient-text {
+  animation: gradient-text-shift 6s ease infinite;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Aesthetic Cosmic Background & Aurora Motion
+   ──────────────────────────────────────────────────────────── */
+
+@keyframes aurora-mesh-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(60px, -50px) scale(1.15) rotate(45deg);
+  }
+  66% {
+    transform: translate(-40px, 40px) scale(0.92) rotate(-30deg);
+  }
+}
+
+@keyframes aurora-mesh-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(-70px, 60px) scale(1.18) rotate(-45deg);
+  }
+  66% {
+    transform: translate(50px, -40px) scale(0.88) rotate(35deg);
+  }
+}
+
+@keyframes aurora-mesh-3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(40px, 50px) scale(1.22);
+    opacity: 0.65;
+  }
+}
+
+@keyframes aurora-mesh-4 {
+  0%, 100% {
+    transform: translate(0, 0) scale(0.95);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate(-50px, -40px) scale(1.15);
+    opacity: 0.55;
+  }
+}
+
+.animate-aurora-1 {
+  animation: aurora-mesh-1 22s ease-in-out infinite;
+}
+
+.animate-aurora-2 {
+  animation: aurora-mesh-2 26s ease-in-out infinite;
+}
+
+.animate-aurora-3 {
+  animation: aurora-mesh-3 18s ease-in-out infinite;
+}
+
+.animate-aurora-4 {
+  animation: aurora-mesh-4 24s ease-in-out infinite;
+}
+
+@keyframes beam-sweep {
+  0% {
+    transform: rotate(-35deg) translateY(-100%);
+    opacity: 0;
+  }
+  30%, 70% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: rotate(-35deg) translateY(100%);
+    opacity: 0;
+  }
+}
+
+.animate-beam {
+  animation: beam-sweep 12s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
