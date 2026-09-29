@@ -21,6 +21,7 @@ interface ShootingStar {
   speed: number;
   angle: number;
   opacity: number;
+  trail: { x: number; y: number }[];
   color: string;
 }
 
@@ -37,57 +38,56 @@ interface StardustMote {
 
 export function AestheticCosmicBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const spotlightRef = useRef<HTMLDivElement | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const [smoothMouse, setSmoothMouse] = useState({ x: -1000, y: -1000 });
 
+  // Mouse move listener with damping
   useEffect(() => {
-    // Detect mobile / low-power / touch device
-    const checkIsMobile = () => {
-      const mobile =
-        window.innerWidth < 768 ||
-        (typeof window !== 'undefined' &&
-          ('ontouchstart' in window || navigator.maxTouchPoints > 0));
-      setIsMobile(mobile);
-      return mobile;
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
     };
 
-    const mobile = checkIsMobile();
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
-    // If mobile, do not initialize expensive canvas animation loop
-    if (mobile) return;
+  // Smooth mouse interpolation loop
+  useEffect(() => {
+    let animId: number;
+    const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor;
 
+    const updateSmoothMouse = () => {
+      setSmoothMouse((prev) => ({
+        x: lerp(prev.x === -1000 ? mousePos.x : prev.x, mousePos.x, 0.08),
+        y: lerp(prev.y === -1000 ? mousePos.y : prev.y, mousePos.y, 0.08),
+      }));
+      animId = requestAnimationFrame(updateSmoothMouse);
+    };
+
+    animId = requestAnimationFrame(updateSmoothMouse);
+    return () => cancelAnimationFrame(animId);
+  }, [mousePos]);
+
+  // Main Canvas Animation Loop (Starfield, Constellations, Shooting Stars, Rising Love Motes)
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: true });
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     let animationFrameId: number;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Mouse coordinates stored in refs (zero React re-renders)
-    const mouse = { x: -1000, y: -1000 };
-    const smoothMouse = { x: -1000, y: -1000 };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      if (spotlightRef.current) {
-        spotlightRef.current.style.transform = `translate3d(${e.clientX - 300}px, ${e.clientY - 300}px, 0)`;
-      }
-    };
-
     const handleResize = () => {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      checkIsMobile();
     };
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('resize', handleResize);
 
-    // Initialize optimized stars count
+    // Initialize Stars
     const starColors = [
       'rgba(255, 255, 255, ',
       'rgba(251, 113, 133, ', // rose
@@ -96,49 +96,50 @@ export function AestheticCosmicBackground() {
       'rgba(165, 180, 252, ', // soft indigo
     ];
 
-    // Keep star count moderate (max 45) for ultra-high FPS (120+ FPS)
-    const starCount = Math.min(45, Math.floor(width / 35));
+    const starCount = Math.floor(Math.min(width, 1920) / 10);
     const stars: Star[] = Array.from({ length: starCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: Math.random() * 1.5 + 0.6,
-      baseAlpha: Math.random() * 0.5 + 0.2,
-      alpha: Math.random() * 0.5 + 0.2,
-      twinkleSpeed: Math.random() * 0.02 + 0.008,
+      size: Math.random() * 1.8 + 0.6,
+      baseAlpha: Math.random() * 0.6 + 0.2,
+      alpha: Math.random() * 0.6 + 0.2,
+      twinkleSpeed: Math.random() * 0.02 + 0.006,
       color: starColors[Math.floor(Math.random() * starColors.length)],
-      vx: (Math.random() - 0.5) * 0.12,
-      vy: (Math.random() - 0.5) * 0.12,
+      vx: (Math.random() - 0.5) * 0.15,
+      vy: (Math.random() - 0.5) * 0.15,
     }));
 
     // Shooting Stars
     const shootingStars: ShootingStar[] = [];
     const createShootingStar = () => {
       const colors = ['#f43f5e', '#a855f7', '#38bdf8', '#fbbf24', '#ffffff'];
-      const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.25;
+      const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.3; // ~45 degrees diagonal
       shootingStars.push({
         x: Math.random() * width * 0.8,
         y: Math.random() * height * 0.35,
-        length: Math.random() * 60 + 60,
-        speed: Math.random() * 10 + 8,
+        length: Math.random() * 80 + 70,
+        speed: Math.random() * 12 + 10,
         angle,
-        opacity: 0.9,
+        opacity: 1,
+        trail: [],
         color: colors[Math.floor(Math.random() * colors.length)],
       });
     };
 
-    // Stardust Motes
-    const moteCount = 12;
+    // Stardust Motes & Floating Love Glyphs
+    const moteCount = 28;
     const motes: StardustMote[] = Array.from({ length: moteCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: Math.random() * 2 + 1,
-      speedY: -(Math.random() * 0.35 + 0.15),
-      speedX: (Math.random() - 0.5) * 0.2,
-      opacity: Math.random() * 0.4 + 0.15,
+      size: Math.random() * 3 + 1.5,
+      speedY: -(Math.random() * 0.45 + 0.2),
+      speedX: (Math.random() - 0.5) * 0.25,
+      opacity: Math.random() * 0.5 + 0.2,
       pulse: Math.random() * Math.PI,
-      isHeart: Math.random() > 0.6,
+      isHeart: Math.random() > 0.65,
     }));
 
+    // Periodic shooting star trigger
     let lastShootTime = Date.now();
 
     const drawHeart = (x: number, y: number, size: number, alpha: number) => {
@@ -153,32 +154,26 @@ export function AestheticCosmicBackground() {
       ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
       ctx.closePath();
       ctx.fillStyle = `rgba(244, 63, 94, ${alpha})`;
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 6;
       ctx.fill();
       ctx.restore();
     };
 
-    const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor;
-
-    // Main 60/120 FPS Render Loop (Zero Garbage Collection pressure)
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Smooth mouse interpolation
-      if (mouse.x !== -1000) {
-        smoothMouse.x = lerp(smoothMouse.x === -1000 ? mouse.x : smoothMouse.x, mouse.x, 0.08);
-        smoothMouse.y = lerp(smoothMouse.y === -1000 ? mouse.y : smoothMouse.y, mouse.y, 0.08);
-      }
-
       const now = Date.now();
-      if (now - lastShootTime > 4000) {
+      if (now - lastShootTime > Math.random() * 3000 + 2500) {
         createShootingStar();
         lastShootTime = now;
       }
 
-      // ── 1. Stars & Connections ──
-      const starLen = stars.length;
-      for (let i = 0; i < starLen; i++) {
+      // ── 1. Render and Connect Star Constellations ───────────
+      for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
+
+        // Drift slowly
         s.x += s.vx;
         s.y += s.vy;
         if (s.x < 0) s.x = width;
@@ -186,77 +181,80 @@ export function AestheticCosmicBackground() {
         if (s.y < 0) s.y = height;
         if (s.y > height) s.y = 0;
 
-        s.alpha = s.baseAlpha + Math.sin(now * s.twinkleSpeed) * 0.2;
-        let boostAlpha = Math.max(0.1, Math.min(0.9, s.alpha));
+        // Twinkle
+        s.alpha = s.baseAlpha + Math.sin(now * s.twinkleSpeed) * 0.25;
+        const currentAlpha = Math.max(0.1, Math.min(1, s.alpha));
 
-        if (smoothMouse.x !== -1000) {
-          const dx = s.x - smoothMouse.x;
-          const dy = s.y - smoothMouse.y;
-          const distSq = dx * dx + dy * dy;
-          if (distSq < 22500) { // 150px
-            const dist = Math.sqrt(distSq);
-            boostAlpha = Math.min(1, boostAlpha + (1 - dist / 150) * 0.4);
-          }
+        // Subtle mouse repulsion / attraction
+        const dx = s.x - smoothMouse.x;
+        const dy = s.y - smoothMouse.y;
+        const distToMouse = Math.sqrt(dx * dx + dy * dy);
+        let boostAlpha = currentAlpha;
+
+        if (distToMouse < 180) {
+          const proximityFactor = 1 - distToMouse / 180;
+          boostAlpha = Math.min(1, currentAlpha + proximityFactor * 0.4);
         }
 
-        // Draw Star Node (No expensive shadowBlur)
+        // Draw Star Node
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fillStyle = `${s.color}${boostAlpha})`;
+        ctx.shadowColor = s.color === 'rgba(251, 113, 133, ' ? '#f43f5e' : '#ffffff';
+        ctx.shadowBlur = s.size > 1.4 ? 5 : 2;
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // Optimized constellation lines (check only next few neighbors)
-        const checkLimit = Math.min(starLen, i + 6);
-        for (let j = i + 1; j < checkLimit; j++) {
+        // Connect nearby stars with delicate constellation filaments
+        for (let j = i + 1; j < stars.length; j++) {
           const s2 = stars[j];
-          const dx = s.x - s2.x;
-          const dy = s.y - s2.y;
-          const dSq = dx * dx + dy * dy;
-          if (dSq < 6400) { // 80px
-            const dist = Math.sqrt(dSq);
-            const lineAlpha = (1 - dist / 80) * 0.12 * Math.min(boostAlpha, s2.alpha);
+          const dist = Math.hypot(s.x - s2.x, s.y - s2.y);
+          if (dist < 85) {
+            const lineAlpha = (1 - dist / 85) * 0.12 * Math.min(boostAlpha, s2.alpha);
             ctx.beginPath();
             ctx.moveTo(s.x, s.y);
             ctx.lineTo(s2.x, s2.y);
             ctx.strokeStyle = `rgba(225, 29, 72, ${lineAlpha})`;
-            ctx.lineWidth = 0.6;
+            ctx.lineWidth = 0.65;
             ctx.stroke();
           }
         }
       }
 
-      // ── 2. Stardust Motes ──
-      for (let i = 0; i < motes.length; i++) {
-        const m = motes[i];
+      // ── 2. Render Rising Stardust Motes & Hearts ────────────
+      for (const m of motes) {
         m.y += m.speedY;
         m.x += m.speedX;
-        m.pulse += 0.025;
+        m.pulse += 0.03;
 
-        if (m.y < -15) {
-          m.y = height + 15;
+        if (m.y < -20) {
+          m.y = height + 20;
           m.x = Math.random() * width;
         }
 
         const currentOpacity = m.opacity * (0.6 + Math.sin(m.pulse) * 0.4);
 
         if (m.isHeart) {
-          drawHeart(m.x, m.y, m.size * 2, currentOpacity * 0.6);
+          drawHeart(m.x, m.y, m.size * 2, currentOpacity * 0.7);
         } else {
           ctx.beginPath();
           ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(251, 191, 36, ${currentOpacity * 0.5})`;
+          ctx.fillStyle = `rgba(251, 191, 36, ${currentOpacity * 0.6})`;
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 8;
           ctx.fill();
+          ctx.shadowBlur = 0;
         }
       }
 
-      // ── 3. Shooting Stars ──
+      // ── 3. Render Shooting Stars with Luminous Tail ─────────
       for (let i = shootingStars.length - 1; i >= 0; i--) {
         const ss = shootingStars[i];
         ss.x += Math.cos(ss.angle) * ss.speed;
         ss.y += Math.sin(ss.angle) * ss.speed;
-        ss.opacity -= 0.02;
+        ss.opacity -= 0.016;
 
-        if (ss.opacity <= 0 || ss.x > width + 50 || ss.y > height + 50) {
+        if (ss.opacity <= 0 || ss.x > width + 100 || ss.y > height + 100) {
           shootingStars.splice(i, 1);
           continue;
         }
@@ -266,14 +264,27 @@ export function AestheticCosmicBackground() {
 
         const grad = ctx.createLinearGradient(ss.x, ss.y, tailX, tailY);
         grad.addColorStop(0, ss.color);
+        grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
         grad.addColorStop(1, 'transparent');
 
         ctx.beginPath();
         ctx.moveTo(ss.x, ss.y);
         ctx.lineTo(tailX, tailY);
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = ss.color;
+        ctx.shadowBlur = 10;
         ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Radiant head spark
+        ctx.beginPath();
+        ctx.arc(ss.x, ss.y, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
       }
 
       animationFrameId = requestAnimationFrame(render);
@@ -282,86 +293,102 @@ export function AestheticCosmicBackground() {
     render();
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [smoothMouse]);
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
-      {/* ── 1. Cosmic Aurora Meshes (Hardware Accelerated & GPU Light) ── */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+      {/* ── 1. Cosmic Aurora & Romantic Nebula Meshes ─────────── */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Top-Left Glowing Rose Orb */}
+        {/* Top-Left Glowing Rose Quartz Orb */}
         <div
-          className={`absolute -top-32 -left-32 w-[550px] h-[550px] rounded-full opacity-60 ${
-            isMobile ? 'blur-[80px]' : 'blur-[120px] animate-aurora-1'
-          }`}
+          className="absolute -top-32 -left-32 w-[650px] h-[650px] rounded-full blur-[130px] opacity-70 animate-aurora-1"
           style={{
             background:
-              'radial-gradient(circle, rgba(244,63,94,0.3) 0%, rgba(225,29,72,0.12) 45%, transparent 75%)',
-            willChange: isMobile ? 'auto' : 'transform',
+              'radial-gradient(circle, rgba(244,63,94,0.38) 0%, rgba(225,29,72,0.18) 45%, rgba(136,19,55,0.06) 70%, transparent 85%)',
           }}
         />
 
-        {/* Top-Right Violet & Indigo Glow */}
+        {/* Top-Right Deep Violet & Indigo Cosmic Nebula */}
         <div
-          className={`absolute -top-24 -right-28 w-[520px] h-[520px] rounded-full opacity-55 ${
-            isMobile ? 'blur-[80px]' : 'blur-[120px] animate-aurora-2'
-          }`}
+          className="absolute -top-24 -right-28 w-[620px] h-[620px] rounded-full blur-[140px] opacity-65 animate-aurora-2"
           style={{
             background:
-              'radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(99,102,241,0.1) 45%, transparent 75%)',
-            willChange: isMobile ? 'auto' : 'transform',
+              'radial-gradient(circle, rgba(139,92,246,0.34) 0%, rgba(99,102,241,0.16) 45%, rgba(67,56,202,0.05) 70%, transparent 85%)',
           }}
         />
 
-        {/* Center-Lower Amber Glow (Desktop only) */}
-        {!isMobile && (
-          <div
-            className="absolute top-1/2 left-1/3 -translate-x-1/2 w-[450px] h-[450px] rounded-full blur-[100px] opacity-40 animate-aurora-3"
-            style={{
-              background:
-                'radial-gradient(circle, rgba(251,191,36,0.18) 0%, rgba(245,158,11,0.06) 50%, transparent 75%)',
-              willChange: 'transform',
-            }}
-          />
-        )}
+        {/* Center-Lower Warm Honey & Golden Amber Glow */}
+        <div
+          className="absolute top-1/2 left-1/3 -translate-x-1/2 w-[550px] h-[550px] rounded-full blur-[125px] opacity-50 animate-aurora-3"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(251,191,36,0.22) 0%, rgba(245,158,11,0.09) 50%, transparent 75%)',
+          }}
+        />
+
+        {/* Bottom-Right Velvet Fuchsia Aurora */}
+        <div
+          className="absolute -bottom-40 -right-24 w-[700px] h-[700px] rounded-full blur-[150px] opacity-60 animate-aurora-4"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(217,70,239,0.28) 0%, rgba(192,38,211,0.12) 50%, transparent 80%)',
+          }}
+        />
+
+        {/* Diagonal Volumetric Light Beams */}
+        <div
+          className="absolute -top-[50%] left-1/4 w-[280px] h-[200%] opacity-20 transform -rotate-35 pointer-events-none animate-beam"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent, rgba(251,113,133,0.15), rgba(168,85,247,0.1), transparent)',
+            filter: 'blur(35px)',
+          }}
+        />
       </div>
 
-      {/* ── 2. Lightweight GPU-accelerated Cursor Spotlight (Desktop only) ── */}
-      {!isMobile && (
-        <div
-          ref={spotlightRef}
-          className="absolute -top-[1000px] -left-[1000px] w-[600px] h-[600px] rounded-full pointer-events-none opacity-40 transition-opacity duration-300"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(139, 92, 246, 0.05) 50%, transparent 70%)',
-          }}
-        />
-      )}
-
-      {/* ── 3. High-Precision Canvas (Active on Desktop, zero CPU on mobile) ── */}
-      {!isMobile && (
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
-      )}
-
-      {/* ── 4. Elegant Cyber Grid Overlay ── */}
+      {/* ── 2. Interactive Spotlight Cursor Follower ─────────── */}
       <div
-        className="absolute inset-0 opacity-[0.05] pointer-events-none"
+        className="absolute inset-0 transition-opacity duration-700 pointer-events-none"
         style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 1px, transparent 1px)
-          `,
-          backgroundSize: '48px 48px',
-          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 85%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 85%)',
+          background: `radial-gradient(650px circle at ${smoothMouse.x}px ${smoothMouse.y}px, rgba(244, 63, 94, 0.12), rgba(139, 92, 246, 0.06), transparent 70%)`,
         }}
       />
 
-      {/* ── 5. Luminous Top Border Shimmer ── */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
+      {/* ── 3. High-Precision Interactive Canvas ─────────────── */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+
+      {/* ── 4. Elegant Cyber-Romantic Grid Overlay ────────────── */}
+      <div
+        className="absolute inset-0 opacity-[0.07] pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(255, 255, 255, 0.25) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.25) 1px, transparent 1px)
+          `,
+          backgroundSize: '48px 48px',
+          maskImage: 'radial-gradient(ellipse 75% 75% at 50% 50%, black 20%, transparent 85%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 75% 75% at 50% 50%, black 20%, transparent 85%)',
+        }}
+      />
+
+      {/* ── 5. Concentric Celestial Rings (Sacred Geometry) ───── */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] rounded-full border border-rose-500/10 pointer-events-none animate-aura-spin" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[980px] h-[980px] rounded-full border border-dashed border-indigo-500/10 pointer-events-none animate-aura-spin" style={{ animationDuration: '45s', animationDirection: 'reverse' }} />
+
+      {/* ── 6. Luminous Horizon Shimmer at Top ────────────────── */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-gradient-to-b from-rose-500/10 via-rose-500/0 to-transparent blur-xl pointer-events-none" />
+
+      {/* ── 7. Cinematic Noise Texture (Film Velvet Finish) ───── */}
+      <div
+        className="absolute inset-0 opacity-[0.035] pointer-events-none mix-blend-overlay"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
     </div>
   );
 }

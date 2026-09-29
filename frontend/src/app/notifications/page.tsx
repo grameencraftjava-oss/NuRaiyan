@@ -162,7 +162,7 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-[#070A12] text-slate-100 flex flex-col selection:bg-rose-500/30 selection:text-rose-200">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 flex gap-6 py-4 sm:py-6 pb-24 lg:pb-8 flex-1">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 flex gap-6 py-6 flex-1">
         <Sidebar />
 
         <main className="flex-1 max-w-2xl mx-auto w-full">

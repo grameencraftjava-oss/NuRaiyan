@@ -30,6 +30,7 @@ import { api, resolveMediaUrl } from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 import { UserAvatar } from '../../components/UserAvatar';
 import { formatDate } from '../../lib/utils';
+import { GLOBAL_RTC_CONFIGURATION } from '../../lib/webrtc';
 import ReplayVideoPlayer from '../../components/live/ReplayVideoPlayer';
 
 interface LiveComment {
@@ -39,13 +40,7 @@ interface LiveComment {
   text: string;
 }
 
-const ICE_SERVERS: RTCConfiguration = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-  ],
-};
+const ICE_SERVERS: RTCConfiguration = GLOBAL_RTC_CONFIGURATION;
 
 // ── High-quality natural audio constraints for live broadcasting ──
 // Critical: Disabling aggressive software noise suppression & zero-latency prevents words from getting cut in half
@@ -350,13 +345,30 @@ function LiveStreamContent() {
 
         // When remote media track arrives from broadcaster
         pc.ontrack = (event) => {
-          if (event.streams && event.streams[0] && remoteVideoRef.current) {
-            if (remoteVideoRef.current.srcObject !== event.streams[0]) {
-              remoteVideoRef.current.srcObject = event.streams[0];
-            }
-            remoteVideoRef.current.play().catch(() => {});
-            setIsConnecting(false);
+          let streamToPlay = event.streams && event.streams[0] ? event.streams[0] : null;
+          if (!streamToPlay) {
+            streamToPlay = new MediaStream([event.track]);
+          } else if (!streamToPlay.getTracks().some((t) => t.id === event.track.id)) {
+            streamToPlay.addTrack(event.track);
           }
+
+          if (remoteVideoRef.current) {
+            if (remoteVideoRef.current.srcObject !== streamToPlay) {
+              remoteVideoRef.current.srcObject = streamToPlay;
+            }
+            remoteVideoRef.current.muted = isMuted;
+            remoteVideoRef.current.play().catch(() => {});
+          }
+          setIsConnecting(false);
+
+          // Interaction unlocker in case browser autoplay policy blocks unmuted playback
+          const unlock = () => {
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.play().catch(() => {});
+            }
+          };
+          window.addEventListener('click', unlock, { once: true });
+          window.addEventListener('touchstart', unlock, { once: true });
         };
 
         pc.onicecandidate = (event) => {

@@ -24,7 +24,6 @@ import { LudoInviteListener } from '../components/LudoInviteListener';
 import { GlobalCallHandler } from '../components/GlobalCallHandler';
 import { GlobalNotificationListener } from '../components/GlobalNotificationListener';
 import { PWAInstallPrompt } from '../components/PWAInstallPrompt';
-import { BottomNav } from '../components/BottomNav';
 
 export default function RootLayout({
   children,
@@ -39,7 +38,6 @@ export default function RootLayout({
         <GlobalCallHandler />
         <GlobalNotificationListener />
         <PWAInstallPrompt />
-        <BottomNav />
       </body>
     </html>
   );

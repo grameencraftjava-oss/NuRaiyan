@@ -45,6 +45,10 @@ uploads/*
 !uploads/.gitkeep
 backend/uploads/*
 !backend/uploads/.gitkeep
+!backend/uploads/music/
+!backend/uploads/music/*
+!frontend/public/uploads/
+!frontend/public/uploads/**
 
 # IDE and Editor files
 .vscode/*

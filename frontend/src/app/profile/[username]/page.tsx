@@ -657,7 +657,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
         className="hidden"
       />
 
-      <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-4 flex gap-6 py-4 sm:py-6 pb-24 lg:pb-8 flex-1">
+      <div className="max-w-7xl mx-auto w-full px-4 flex gap-6 py-6 flex-1">
         <Sidebar />
 
         <main className="flex-1 max-w-4xl mx-auto w-full">

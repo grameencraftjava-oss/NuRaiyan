@@ -55,28 +55,55 @@ export function sanitizeInputMiddleware(req: Request, res: Response, next: NextF
 }
 
 export function isAllowedOrigin(origin?: string): boolean {
-  if (!origin) return true;
-  if (ENV.NODE_ENV !== 'production') return true;
+  if (!origin || origin === 'null') return true;
   if (ENV.CLIENT_URL === '*') return true;
+
+  // Allow mobile apps, extensions, webviews, and local environments
+  if (
+    origin.startsWith('capacitor://') ||
+    origin.startsWith('ionic://') ||
+    origin.startsWith('file://') ||
+    origin.startsWith('http://localhost') ||
+    origin.startsWith('https://localhost') ||
+    origin.startsWith('http://127.0.0.1') ||
+    origin.startsWith('https://127.0.0.1') ||
+    origin.startsWith('http://192.168.') ||
+    origin.startsWith('http://10.')
+  ) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(origin.startsWith('http') ? origin : `http://${origin}`);
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.endsWith('.vercel.app') ||
+      hostname.endsWith('.onrender.com') ||
+      hostname.endsWith('nuraiyan.com')
+    ) {
+      return true;
+    }
+  } catch {
+    // If URL parsing fails, check substring matches safely
+    if (origin.includes('.vercel.app') || origin.includes('.onrender.com')) {
+      return true;
+    }
+  }
 
   const configured = (ENV.CLIENT_URL || '')
     .split(',')
-    .map((s) => s.trim())
+    .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
-  const defaultAllowed = [
-    ...configured,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://nuraiyan.com',
-  ];
+  if (configured.length > 0) {
+    return configured.some((allowed) => origin.toLowerCase().includes(allowed));
+  }
 
-  return defaultAllowed.some((allowed) => {
-    if (!allowed) return false;
-    return origin === allowed || origin.startsWith(allowed) || origin.endsWith('.vercel.app');
-  });
+  return true;
 }
-
 
 // 2. CSRF & Origin Guard for Mutating Requests
 export function csrfOriginGuard(req: Request, res: Response, next: NextFunction) {
@@ -85,15 +112,13 @@ export function csrfOriginGuard(req: Request, res: Response, next: NextFunction)
     return next();
   }
 
+  // Mobile apps, Bearer auth requests, or server-to-server requests are always authorized
+  if (req.headers.authorization || req.headers['x-access-token']) {
+    return next();
+  }
+
   const origin = req.headers.origin || req.headers.referer;
   if (!origin) {
-    // In strict production, allow requests if mobile/bearer token present or non-browser
-    if (ENV.NODE_ENV === 'production' && !req.headers.authorization) {
-      return res.status(403).json({
-        success: false,
-        message: 'Security error: Origin could not be verified (Forbidden Origin).',
-      });
-    }
     return next();
   }
 
@@ -110,13 +135,8 @@ export function csrfOriginGuard(req: Request, res: Response, next: NextFunction)
 // 3. Security Headers Enforcer
 export function securityHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader(
-    'Permissions-Policy',
-    'camera=(self), microphone=(self), geolocation=(), interest-cohort=()'
-  );
   next();
 }

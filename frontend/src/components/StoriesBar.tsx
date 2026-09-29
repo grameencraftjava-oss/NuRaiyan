@@ -107,7 +107,7 @@ export const StoriesBar: React.FC = () => {
     if (story) {
       api.post(`/stories/${story.id}/view`).catch(() => {});
       if (story.musicUrl && storyAudioRef.current) {
-        storyAudioRef.current.src = story.musicUrl;
+        storyAudioRef.current.src = resolveMediaUrl(story.musicUrl);
         storyAudioRef.current.currentTime = story.musicStartSec || 0;
         storyAudioRef.current.play().catch(() => {});
       }
@@ -135,7 +135,7 @@ export const StoriesBar: React.FC = () => {
       if (story) {
         api.post(`/stories/${story.id}/view`).catch(() => {});
         if (story.musicUrl && storyAudioRef.current) {
-          storyAudioRef.current.src = story.musicUrl;
+          storyAudioRef.current.src = resolveMediaUrl(story.musicUrl);
           storyAudioRef.current.currentTime = story.musicStartSec || 0;
           storyAudioRef.current.play().catch(() => {});
         } else if (storyAudioRef.current) {
@@ -154,7 +154,7 @@ export const StoriesBar: React.FC = () => {
       if (story) {
         api.post(`/stories/${story.id}/view`).catch(() => {});
         if (story.musicUrl && storyAudioRef.current) {
-          storyAudioRef.current.src = story.musicUrl;
+          storyAudioRef.current.src = resolveMediaUrl(story.musicUrl);
           storyAudioRef.current.currentTime = story.musicStartSec || 0;
           storyAudioRef.current.play().catch(() => {});
         } else if (storyAudioRef.current) {
@@ -201,7 +201,7 @@ export const StoriesBar: React.FC = () => {
             setCurrentStoryIndex(nextIndex);
             const nextStory = remainingStories[nextIndex];
             if (nextStory?.musicUrl && storyAudioRef.current) {
-              storyAudioRef.current.src = nextStory.musicUrl;
+              storyAudioRef.current.src = resolveMediaUrl(nextStory.musicUrl);
               storyAudioRef.current.currentTime = nextStory.musicStartSec || 0;
               storyAudioRef.current.play().catch(() => {});
             } else if (storyAudioRef.current) {

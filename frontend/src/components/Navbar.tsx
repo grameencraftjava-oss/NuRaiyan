@@ -146,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreatePost }) => {
                   PRO
                 </span>
               </span>
-              <span className="hidden sm:flex text-[10px] font-medium text-rose-400/90 tracking-wide mt-0.5 items-center gap-1">
+              <span className="text-[10px] font-medium text-rose-400/90 tracking-wide mt-0.5 flex items-center gap-1">
                 <span>Nusrat &amp; Raiyan</span>
               </span>
             </div>
@@ -250,18 +250,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreatePost }) => {
         </div>
 
         {/* Actions & Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onOpenCreatePost}
-            className="hidden sm:flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-rose-500 via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-500/20 border border-white/20 transition-all hover:scale-[1.02] cursor-pointer"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-rose-500 via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-500/20 border border-white/20 transition-all hover:scale-[1.02] cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span className="hidden md:inline">New Post</span>
+            <span className="hidden sm:inline">New Post</span>
           </button>
 
           <Link
             href="/friends"
-            className="hidden md:flex p-2.5 text-slate-300 hover:text-white hover:bg-white/[0.08] rounded-xl relative transition-all"
+            className="p-2.5 text-slate-300 hover:text-white hover:bg-white/[0.08] rounded-xl relative transition-all"
             title="Friends & Requests"
           >
             <Users className="w-5 h-5" />
@@ -274,7 +274,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreatePost }) => {
 
           <Link
             href="/notifications"
-            className="hidden md:flex p-2.5 text-slate-300 hover:text-white hover:bg-white/[0.08] rounded-xl relative transition-all"
+            className="p-2.5 text-slate-300 hover:text-white hover:bg-white/[0.08] rounded-xl relative transition-all"
             title="Notifications"
           >
             <Bell className="w-5 h-5" />
@@ -287,7 +287,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreatePost }) => {
 
           <Link
             href="/messages"
-            className="hidden md:flex p-2.5 text-slate-300 hover:text-white hover:bg-white/[0.08] rounded-xl relative transition-all"
+            className="p-2.5 text-slate-300 hover:text-white hover:bg-white/[0.08] rounded-xl relative transition-all"
             title="Messages"
           >
             <MessageCircle className="w-5 h-5" />
@@ -300,7 +300,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreatePost }) => {
 
           <Link
             href="/live"
-            className="hidden lg:flex p-2.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-all items-center gap-1.5 relative group"
+            className="p-2.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-all flex items-center gap-1.5 relative group"
             title="Live Stream"
           >
             <Radio className="w-5 h-5 animate-pulse" />

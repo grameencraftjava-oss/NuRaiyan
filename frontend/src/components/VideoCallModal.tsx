@@ -111,8 +111,8 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({ onClose }) => {
         (remoteStream) => {
           console.log('🎬 [Call] Received remote stream with tracks:', remoteStream.getTracks().map(t => `${t.kind}:${t.id}`));
           
-          // 🔒 Primary Native Hardware Playout: Direct browser media engine (100% continuous, zero drops, 1+ hour continuous crystal clear sound)
-          if (remoteAudioRef.current) {
+          // 🔒 Audio Playout: For Audio Calls use <audio>, for Video Calls route directly through <video>
+          if (activeCall.type === 'AUDIO' && remoteAudioRef.current) {
             if (remoteAudioRef.current.srcObject !== remoteStream) {
               remoteAudioRef.current.srcObject = remoteStream;
             }
@@ -122,12 +122,12 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({ onClose }) => {
             });
           }
 
-          // 🔒 Video stream routes to <video> element (muted so visual decode never echoes or interferes with audio)
+          // 🔒 Video stream routes to <video> element
           if (activeCall.type === 'VIDEO' && remoteVideoRef.current) {
             if (remoteVideoRef.current.srcObject !== remoteStream) {
               remoteVideoRef.current.srcObject = remoteStream;
             }
-            remoteVideoRef.current.muted = true;
+            remoteVideoRef.current.muted = isSpeakerMuted;
             remoteVideoRef.current.play().catch((err) => {
               console.warn('[Call] remoteVideo autoplay deferred:', err);
             });
@@ -135,11 +135,12 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({ onClose }) => {
 
           // Global interaction unlocker (in case browser blocked initial autoplay)
           const unlockMedia = () => {
-            if (remoteAudioRef.current) {
+            if (activeCall.type === 'AUDIO' && remoteAudioRef.current) {
               remoteAudioRef.current.muted = isSpeakerMuted;
               remoteAudioRef.current.play().catch(() => {});
             }
             if (activeCall.type === 'VIDEO' && remoteVideoRef.current) {
+              remoteVideoRef.current.muted = isSpeakerMuted;
               remoteVideoRef.current.play().catch(() => {});
             }
           };
@@ -449,7 +450,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({ onClose }) => {
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          muted
+          muted={isSpeakerMuted}
           onLoadedMetadata={() => {
             if (activeCall.type === 'VIDEO') {
               setHasRemoteVideo(true);

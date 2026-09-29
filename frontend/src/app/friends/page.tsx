@@ -211,7 +211,7 @@ export default function FriendsPage() {
     <div className="min-h-screen bg-[#070A12] text-slate-100 flex flex-col">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-24 lg:pb-8 flex gap-6 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex gap-6 flex-1 w-full">
         {/* Left Navigation Sidebar */}
         <Sidebar />
 

@@ -102,10 +102,6 @@ export const resolveMediaUrl = (url?: string | null): string => {
     return url;
   }
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  // In the browser, /uploads/* paths are served seamlessly by Next.js proxy route on the current origin
-  if (typeof window !== 'undefined' && cleanPath.startsWith('/uploads/')) {
-    return cleanPath;
-  }
   const baseUrl = typeof window !== 'undefined' ? getBaseApiUrl() : API_BASE_URL;
   const base = baseUrl.replace(/\/api$/, '').replace(/\/$/, '');
   return `${base}${cleanPath}`;

@@ -158,7 +158,9 @@ export async function GET(
 
   // 2. Fallback to HTTP Proxy (for remote/containerized environments)
   try {
-    const backendUrl = `http://127.0.0.1:5001/uploads/${filePath}`;
+    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5001';
+    const baseUrl = rawApiUrl.replace(/\/api$/, '').replace(/\/$/, '');
+    const backendUrl = `${baseUrl}/uploads/${filePath}`;
     const range = request.headers.get('range');
     const proxyHeaders: Record<string, string> = {};
     if (range) proxyHeaders['range'] = range;
